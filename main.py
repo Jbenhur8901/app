@@ -2,35 +2,90 @@ import streamlit as st
 import yanola as yl
 import requests as re
 
+# === Initialisation des variables dans la session === #
+def initialize_session_state():
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = [
+            {
+                "role": "assistant",
+                "content": "Bonjour, je suis Yanola, comment puis-je vous aider ?",
+                "avatar": "Hi im YANOLA BCA.png",
+            }
+        ]
+    if "chat_id" not in st.session_state:
+        st.session_state["chat_id"] = yl.generate_id()
 
-with st.sidebar:
-   st.write("# Options")
-   st.markdown("---")
-   index = st.text_input("Entrez le nom de l'index")
-   subject = st.text_input("Entrez le thème principal")
-   sys_instructions = st.text_area("Entrez vos instructions")
-   
+# === Barre latérale avec options === #
+def render_sidebar():
+    with st.sidebar:
+        st.logo("logo nodes (1).png", size="large")  # Optimisation visuelle
+        st.write("# Options")
+        st.markdown("---")
+        
+        index = st.text_input("Entrez le nom de l'index", key="index_input")
+        subject = st.text_input("Entrez le thème principal", key="subject_input")
+        sys_instructions = st.text_area("Entrez vos instructions", key="sys_instructions_input")
+        
+        return index, subject, sys_instructions
 
-st.title("💬 Yanola")
-st.caption("🚀 Interface utilisateur")
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Bonjour je suis yanola, comment puis je vous aider ?"}]
+# === Afficher les messages de chat === #
+def render_chat_messages():
+    for msg in st.session_state.messages:
+        st.chat_message(msg["role"], avatar=msg["avatar"]).write(msg["content"])
 
-if "chat_id" not in st.session_state :
+# === Ajouter un message au chat === #
+def add_chat_message(role, content, avatar):
+    st.session_state.messages.append({"role": role, "content": content, "avatar": avatar})
+    st.chat_message(role, avatar=avatar).write(content)
 
-    st.session_state["chat_id"] = yl.generate_id()
+# === Fonction principale du chatbot === #
+def handle_chat_input(prompt, index, subject, sys_instructions):
+    try:
+        # Initialiser l'agent Yanola
+        retrieval_agent = yl.RetrievalAgent(
+            user_input = prompt, 
+            index_name = index, 
+            sys_instruction=sys_instructions, 
+            chat_id=st.session_state["chat_id"], 
+            subject_matter=subject
+        )
+        # Lancer l'agent
+        response = retrieval_agent.run_agent()
+        
+        # Ajouter la réponse dans le chat
+        add_chat_message("assistant", response, "Hi im YANOLA BCA.png")
+    except Exception as e:
+        st.error(f"Erreur lors de l'exécution de l'agent : {e}")
 
+# === Application principale === #
+def main():
+    # Initialisation
+    initialize_session_state()
 
-for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
+    # Afficher la barre latérale et récupérer les paramètres
+    index, subject, sys_instructions = render_sidebar()
 
-if prompt := st.chat_input(placeholder="Message à Yanola"):
+    # Afficher le logo au début (uniquement au premier rendu)
+    if "logo_shown" not in st.session_state:
+        st.image("logo nodes (1).png", width=200)
+        st.session_state["logo_shown"] = True
 
-    yl = yl.RetrievalAgent(prompt, index,sys_instructions,st.session_state["chat_id"],subject)
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    st.chat_message("user").write(prompt)
-    msg = yl.run_agent()
-    
-    st.session_state.messages.append({"role": "assistant", "content": msg})
-    st.chat_message("assistant").write_stream(yl.stream_data)
-    
+    # Afficher les messages
+    render_chat_messages()
+
+    # Entrée utilisateur pour le chat
+    prompt = st.chat_input(placeholder="Message à Yanola")
+    if prompt:
+        # Ajouter le message utilisateur dans le chat
+        add_chat_message("user", prompt, "5049207_avatar_people_person_profile_user_icon (1).png")
+        
+        # Gérer la réponse
+        if not index or not subject or not sys_instructions:
+            st.warning("Veuillez remplir tous les champs dans la barre latérale avant de continuer.")
+        else:
+            handle_chat_input(prompt, index, subject, sys_instructions)
+
+# Exécuter l'application principale
+if __name__ == "__main__":
+    main()
+
