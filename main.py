@@ -1,6 +1,5 @@
 import streamlit as st
-import yanola as yl
-import requests as re
+import utils.yanola as yl
 
 # === Initialisation des variables dans la session === #
 def initialize_session_state():
@@ -9,7 +8,7 @@ def initialize_session_state():
             {
                 "role": "assistant",
                 "content": "Bonjour, je suis Yanola, comment puis-je vous aider ?",
-                "avatar": "Hi im YANOLA BCA.png",
+                "avatar": "images/Hi im YANOLA BCA.png",
             }
         ]
     if "chat_id" not in st.session_state:
@@ -18,7 +17,7 @@ def initialize_session_state():
 # === Barre latérale avec options === #
 def render_sidebar():
     with st.sidebar:
-        st.logo("logo nodes (1).png", size="large")  # Optimisation visuelle
+        st.logo("images/logo nodes (1).png", size="large")  # Optimisation visuelle
         st.write("# Options")
         st.markdown("---")
         
@@ -34,9 +33,12 @@ def render_chat_messages():
         st.chat_message(msg["role"], avatar=msg["avatar"]).write(msg["content"])
 
 # === Ajouter un message au chat === #
-def add_chat_message(role, content, avatar):
+def add_chat_message(role, content, avatar, stream = None):
     st.session_state.messages.append({"role": role, "content": content, "avatar": avatar})
-    st.chat_message(role, avatar=avatar).write(content)
+    if stream:
+        st.chat_message(role, avatar=avatar).write_stream(stream)
+    else:
+        st.chat_message(role, avatar=avatar).write(content)
 
 # === Fonction principale du chatbot === #
 def handle_chat_input(prompt, index, subject, sys_instructions):
@@ -51,9 +53,10 @@ def handle_chat_input(prompt, index, subject, sys_instructions):
         )
         # Lancer l'agent
         response = retrieval_agent.run_agent()
+        stream = retrieval_agent.stream_data
         
         # Ajouter la réponse dans le chat
-        add_chat_message("assistant", response, "Hi im YANOLA BCA.png")
+        add_chat_message("assistant", response, "images/Hi im YANOLA BCA.png", stream=stream)
     except Exception as e:
         st.error(f"Erreur lors de l'exécution de l'agent : {e}")
 
@@ -67,7 +70,7 @@ def main():
 
     # Afficher le logo au début (uniquement au premier rendu)
     if "logo_shown" not in st.session_state:
-        st.image("logo nodes (1).png", width=200)
+        st.image("images/logo nodes (1).png", width=200)
         st.session_state["logo_shown"] = True
 
     # Afficher les messages
@@ -77,7 +80,7 @@ def main():
     prompt = st.chat_input(placeholder="Message à Yanola")
     if prompt:
         # Ajouter le message utilisateur dans le chat
-        add_chat_message("user", prompt, "5049207_avatar_people_person_profile_user_icon (1).png")
+        add_chat_message("user", prompt, "images/5049207_avatar_people_person_profile_user_icon (1).png")
         
         # Gérer la réponse
         if not index or not subject or not sys_instructions:

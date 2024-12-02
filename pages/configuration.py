@@ -1,5 +1,5 @@
 import streamlit as st
-import file_processing as fp
+import utils.file_processing as fp
 
 st.title("Traitement de fichier")
 
